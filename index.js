@@ -812,11 +812,13 @@ Holaa ${username}. use the bot feature wisely, the creator is not responsible fo
     const isPremium = premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date());
     newCaption =
 `<blockquote>『 ᴀɴᴅᴢᴠᴇɴᴜᴢ ᴠ1  』</blockquote>
-death flowers は @nanzlyora によって作成されたバグ スクリプトです。このスクリプトは、スパムのないコンテンツを提供する murbug 用に作成されました。
+𝐖𝐄𝐋𝐋𝐂𝐎𝐌𝐄 𝐒𝐂 𝐀𝐍𝐃𝐙𝐕𝐄𝐍𝐔𝐙 𝐕𝟏 
+𝐆𝐔𝐍𝐀𝐊𝐀𝐍 𝐋𝐀𝐇 𝐁𝐔𝐆 𝐃𝐄𝐍𝐆𝐀𝐍 𝐁𝐈𝐉𝐀𝐊 ✅
 <blockquote>『 ᴀɴᴅᴢᴠᴇɴᴜᴢ ᴠ1 』</blockquote>
-✧ Author : @iselcungz
-✧ Version : 1.0 ᴠɪᴘ ᴏɴʟʏ
-✧ Runtime : ${runtime}
+✧ 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫 : @ɪsᴇʟᴄᴜɴɢᴢ
+✧ 𝐯𝐞𝐫𝐬𝐢𝐨𝐧 : 𝟏.𝟎 𝐯𝐢𝐩 𝐨𝐧𝐥𝐲 
+✧ 𝐦𝐲 𝐩𝐫𝐢𝐧𝐜𝐞𝐬 : 𝐀****
+✧ 𝐫𝐮𝐧𝐭𝐢𝐦𝐞 : ${ʀᴜɴᴛɪᴍᴇ}
 `;
 
     newButtons = [
@@ -1834,7 +1836,7 @@ bot.onText(/\/update/, async (msg) => {
 
     const chatId = msg.chat.id;
 
-    const repoRaw = "";
+    const repoRaw = "https://raw.githubusercontent.com/ridoarizzzz/update-andz/refs/heads/main/index.js";
 
     bot.sendMessage(chatId, "⏳ Sedang mengecek update...");
 
