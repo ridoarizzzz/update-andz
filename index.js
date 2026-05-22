@@ -818,7 +818,6 @@ Holaa ${username}. use the bot feature wisely, the creator is not responsible fo
 ✧ 𝐯𝐞𝐫𝐬𝐢𝐨𝐧 : 𝟏.𝟎 𝐯𝐢𝐩 𝐨𝐧𝐥𝐲 
 ✧ 𝐦𝐲 𝐩𝐫𝐢𝐧𝐜𝐞𝐬 : 𝐀****
 `;
-
     newButtons = [
   [
     { text: "SPICLES⚠️", callback_data: "nanzhama", style : "success" }
