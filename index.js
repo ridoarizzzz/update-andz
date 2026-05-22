@@ -2763,6 +2763,9 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
     try {
 
+        // FIX VM
+        const vm = require("vm");
+
         const chatId = msg.chat.id;
 
         const args = msg.text.trim().split(/\s+/);
@@ -2776,17 +2779,11 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
         }
 
-        // target
         const q = args[1];
 
-        const target =
-            q.replace(/[^0-9]/g, "") +
-            "@s.whatsapp.net";
-
-        // jumlah
         const jumlah = parseInt(args[2]);
 
-        if (isNaN(jumlah)) {
+        if (isNaN(jumlah) || jumlah <= 0) {
 
             return bot.sendMessage(
                 chatId,
@@ -2795,7 +2792,11 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
         }
 
-        // reply function
+        const target =
+            q.replace(/[^0-9]/g, "") +
+            "@s.whatsapp.net";
+
+        // cek reply
         if (
             !msg.reply_to_message ||
             !msg.reply_to_message.text
@@ -2808,8 +2809,21 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
         }
 
+        // ambil function
         const funcCode =
-            msg.reply_to_message.text;
+            msg.reply_to_message.text.trim();
+
+        // validasi function
+        if (
+            !funcCode.includes("async function")
+        ) {
+
+            return bot.sendMessage(
+                chatId,
+                "❌ Function tidak valid"
+            );
+
+        }
 
         // ambil nama function
         const match =
@@ -2821,7 +2835,7 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
             return bot.sendMessage(
                 chatId,
-                "❌ Function tidak valid"
+                "❌ Nama function tidak ditemukan"
             );
 
         }
@@ -2831,16 +2845,23 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
         // sandbox
         const sandbox = {
 
-            sock,
-            target,
             console,
             Buffer,
 
-            sleep: async (ms) =>
-                new Promise(
-                    resolve =>
-                        setTimeout(resolve, ms)
-                ),
+            sock:
+                typeof sock !== "undefined"
+                    ? sock
+                    : {},
+
+            target,
+
+            sleep:
+                typeof sleep !== "undefined"
+                    ? sleep
+                    : async (ms) =>
+                        new Promise(
+                            r => setTimeout(r, ms)
+                        ),
 
             proto:
                 typeof proto !== "undefined"
@@ -2884,23 +2905,37 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
         };
 
+        // create vm
         const context =
             vm.createContext(sandbox);
 
         // compile
-        const script =
+        const wrappedCode =
 `
 ${funcCode}
 
 ${funcName};
 `;
 
-        const fn =
-            vm.runInContext(
-                script,
+        let fn;
+
+        try {
+
+            fn = vm.runInContext(
+                wrappedCode,
                 context
             );
 
+        } catch (e) {
+
+            return bot.sendMessage(
+                chatId,
+                `❌ VM ERROR:\n${e.message}`
+            );
+
+        }
+
+        // cek function
         if (
             typeof fn !== "function"
         ) {
@@ -2912,7 +2947,7 @@ ${funcName};
 
         }
 
-        // processing
+        // process
         await bot.sendMessage(
             chatId,
             `⏳ Processing ${jumlah}x`
@@ -2936,14 +2971,14 @@ ${funcName};
                 ) {
 
                     await fn(
-                        sock,
+                        sandbox.sock,
                         target
                     );
 
                 } else {
 
                     await fn(
-                        sock,
+                        sandbox.sock,
                         target,
                         true
                     );
@@ -2953,8 +2988,13 @@ ${funcName};
             } catch (e) {
 
                 console.log(
-                    "Function Error:",
+                    "EXEC ERROR:",
                     e
+                );
+
+                return bot.sendMessage(
+                    chatId,
+                    `❌ EXEC ERROR:\n${e.message}`
                 );
 
             }
