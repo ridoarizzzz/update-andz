@@ -589,7 +589,6 @@ bot.onText(/\/start/, (msg) => {
 ✧ 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫 : @iselcungz
 ✧ 𝐯𝐞𝐫𝐬𝐢𝐨𝐧 : 𝟏.𝟎 𝐯𝐢𝐩 𝐨𝐧𝐥𝐲 
 ✧ 𝐦𝐲 𝐩𝐫𝐢𝐧𝐜𝐞𝐬 : 𝐀****
-✧ 𝐫𝐮𝐧𝐭𝐢𝐦𝐞 : ${runtime}
 `;
 
   const buttons = [
@@ -818,7 +817,6 @@ Holaa ${username}. use the bot feature wisely, the creator is not responsible fo
 ✧ 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫 : @ɪsᴇʟᴄᴜɴɢᴢ
 ✧ 𝐯𝐞𝐫𝐬𝐢𝐨𝐧 : 𝟏.𝟎 𝐯𝐢𝐩 𝐨𝐧𝐥𝐲 
 ✧ 𝐦𝐲 𝐩𝐫𝐢𝐧𝐜𝐞𝐬 : 𝐀****
-✧ 𝐫𝐮𝐧𝐭𝐢𝐦𝐞 : ${ʀᴜɴᴛɪᴍᴇ}
 `;
 
     newButtons = [
