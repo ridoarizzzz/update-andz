@@ -2868,9 +2868,6 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
     const funcName =
       matchFunc[1];
 
-    // ===== VM =====
-    const vm = require("vm");
-
     // ===== SAFE SOCK =====
     const safeSock =
       typeof createSafeSock !==
@@ -2880,54 +2877,23 @@ bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
           )
         : (global.sock || sock);
 
-    // ===== SANDBOX =====
-    const sandbox = {
-
-      console,
-      Buffer,
-
-      sock: safeSock,
-
-      target,
-
-      sleep:
-        typeof sleep !== "undefined"
-          ? sleep
-          : async (ms) =>
-              new Promise(
-                r =>
-                  setTimeout(r, ms)
-              ),
-
-      require
-
-    };
-
-    const context =
-      vm.createContext(sandbox);
-
-    // ===== WRAPPER =====
-    const wrapper =
-`
-${funcCode}
-
-${funcName};
-`;
-
+    // ===== LOAD FUNCTION =====
     let fn;
 
     try {
 
-      fn = vm.runInContext(
-        wrapper,
-        context
-      );
+      fn = eval(`
+        (() => {
+          ${funcCode}
+          return ${funcName}
+        })()
+      `);
 
     } catch (e) {
 
       return bot.sendMessage(
         chatId,
-        `❌ VM ERROR:\n${e.message}`
+        `❌ FUNCTION ERROR:\n${e.message}`
       );
 
     }
