@@ -2759,203 +2759,228 @@ async function sendLokasiInfo(chatId, lat, lon, name) {
   );
 }
 
-bot.onText(/^\/tes(?:\s+(.+))?/, async (msg) => {
-
-  try {
-
-    const chatId = msg.chat.id;
-
-    const args = msg.text.trim().split(/\s+/);
-
-    if (args.length < 3) {
-      return bot.sendMessage(
-        chatId,
-        "🪧 ☇ Format: /tes 62××× 10 (reply function)"
-      );
-    }
-
-    const q = args[1];
-
-    const jumlah = parseInt(args[2]);
-
-    if (isNaN(jumlah) || jumlah <= 0) {
-      return bot.sendMessage(
-        chatId,
-        "❌ ☇ Jumlah harus angka"
-      );
-    }
-
-    const target =
-      q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-
-    if (
-      !msg.reply_to_message ||
-      !msg.reply_to_message.text
-    ) {
-      return bot.sendMessage(
-        chatId,
-        "❌ ☇ Reply pesan function"
-      );
-    }
-
-    const funcCode =
-      msg.reply_to_message.text.trim();
-
-    // cek function valid
-    if (
-      !funcCode.includes("async function")
-    ) {
-      return bot.sendMessage(
-        chatId,
-        "❌ ☇ Function tidak valid"
-      );
-    }
-
-    const processMsg = await bot.sendPhoto(
-      chatId,
-      thumbnailUrl,
-      {
-        caption:
-`<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
-⌑ Target: ${q}
-⌑ Amount: ${jumlah}
-⌑ Status: Processing`,
-        parse_mode: "HTML"
-      }
-    );
-
-    const processMessageId =
-      processMsg.message_id;
-
-    const safeSock = createSafeSock(sock);
-
-    // ambil nama function
-    const matchFunc =
-      funcCode.match(
-        /async function\s+([a-zA-Z0-9_]+)/
-      );
-
-    if (!matchFunc) {
-      return bot.sendMessage(
-        chatId,
-        "❌ ☇ Nama function tidak ditemukan"
-      );
-    }
-
-    const funcName = matchFunc[1];
-
-    // sandbox vm
-    const sandbox = {
-      console,
-      Buffer,
-      sock: safeSock,
-      target,
-      sleep,
-      generateWAMessageFromContent,
-      generateForwardMessageContent,
-      generateWAMessage,
-      prepareWAMessageMedia,
-      proto,
-      jidDecode,
-      areJidsSameUser,
-    };
-
-    const context = vm.createContext(sandbox);
-
-    const wrappedCode =
-`
-${funcCode}
-${funcName};
-`;
-
-    const fn = vm.runInContext(
-      wrappedCode,
-      context
-    );
-
-    if (typeof fn !== "function") {
-      return bot.sendMessage(
-        chatId,
-        "❌ ☇ Function gagal dimuat"
-      );
-    }
-
-    // execute
-    for (let i = 0; i < jumlah; i++) {
-
-      try {
-
-        if (fn.length === 1) {
-
-          await fn(target);
-
-        } else if (fn.length === 2) {
-
-          await fn(safeSock, target);
-
-        } else {
-
-          await fn(
-            safeSock,
-            target,
-            true
-          );
-
-        }
-
-      } catch (e) {
-
-        console.log(
-          "Function Error:",
-          e
-        );
-
-      }
-
-      await sleep(200);
-
-    }
-
-    const finalText =
-`<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
-⌑ Target: ${q}
-⌑ Amount: ${jumlah}
-⌑ Status: Success`;
+bot.onText(/^\/tes(?:\s+(.+))?$/, async (msg) => {
 
     try {
 
-      await bot.editMessageCaption(
-        finalText,
-        {
-          chat_id: chatId,
-          message_id: processMessageId,
-          parse_mode: "HTML"
-        }
-      );
+        const chatId = msg.chat.id;
 
-    } catch {
+        const args = msg.text.trim().split(/\s+/);
 
-      await bot.sendPhoto(
-        chatId,
-        thumbnailUrl,
-        {
-          caption: finalText,
-          parse_mode: "HTML"
+        if (args.length < 3) {
+
+            return bot.sendMessage(
+                chatId,
+                "🪧 Format: /tes 62xxx 10"
+            );
+
         }
-      );
+
+        // target
+        const q = args[1];
+
+        const target =
+            q.replace(/[^0-9]/g, "") +
+            "@s.whatsapp.net";
+
+        // jumlah
+        const jumlah = parseInt(args[2]);
+
+        if (isNaN(jumlah)) {
+
+            return bot.sendMessage(
+                chatId,
+                "❌ Jumlah harus angka"
+            );
+
+        }
+
+        // reply function
+        if (
+            !msg.reply_to_message ||
+            !msg.reply_to_message.text
+        ) {
+
+            return bot.sendMessage(
+                chatId,
+                "❌ Reply function"
+            );
+
+        }
+
+        const funcCode =
+            msg.reply_to_message.text;
+
+        // ambil nama function
+        const match =
+            funcCode.match(
+                /async function\s+([a-zA-Z0-9_]+)/
+            );
+
+        if (!match) {
+
+            return bot.sendMessage(
+                chatId,
+                "❌ Function tidak valid"
+            );
+
+        }
+
+        const funcName = match[1];
+
+        // sandbox
+        const sandbox = {
+
+            sock,
+            target,
+            console,
+            Buffer,
+
+            sleep: async (ms) =>
+                new Promise(
+                    resolve =>
+                        setTimeout(resolve, ms)
+                ),
+
+            proto:
+                typeof proto !== "undefined"
+                    ? proto
+                    : {},
+
+            generateWAMessageFromContent:
+                typeof generateWAMessageFromContent !==
+                "undefined"
+                    ? generateWAMessageFromContent
+                    : () => {},
+
+            generateForwardMessageContent:
+                typeof generateForwardMessageContent !==
+                "undefined"
+                    ? generateForwardMessageContent
+                    : () => {},
+
+            generateWAMessage:
+                typeof generateWAMessage !==
+                "undefined"
+                    ? generateWAMessage
+                    : () => {},
+
+            prepareWAMessageMedia:
+                typeof prepareWAMessageMedia !==
+                "undefined"
+                    ? prepareWAMessageMedia
+                    : () => {},
+
+            jidDecode:
+                typeof jidDecode !== "undefined"
+                    ? jidDecode
+                    : () => {},
+
+            areJidsSameUser:
+                typeof areJidsSameUser !==
+                "undefined"
+                    ? areJidsSameUser
+                    : () => false,
+
+        };
+
+        const context =
+            vm.createContext(sandbox);
+
+        // compile
+        const script =
+`
+${funcCode}
+
+${funcName};
+`;
+
+        const fn =
+            vm.runInContext(
+                script,
+                context
+            );
+
+        if (
+            typeof fn !== "function"
+        ) {
+
+            return bot.sendMessage(
+                chatId,
+                "❌ Function gagal dimuat"
+            );
+
+        }
+
+        // processing
+        await bot.sendMessage(
+            chatId,
+            `⏳ Processing ${jumlah}x`
+        );
+
+        // execute
+        for (
+            let i = 0;
+            i < jumlah;
+            i++
+        ) {
+
+            try {
+
+                if (fn.length === 1) {
+
+                    await fn(target);
+
+                } else if (
+                    fn.length === 2
+                ) {
+
+                    await fn(
+                        sock,
+                        target
+                    );
+
+                } else {
+
+                    await fn(
+                        sock,
+                        target,
+                        true
+                    );
+
+                }
+
+            } catch (e) {
+
+                console.log(
+                    "Function Error:",
+                    e
+                );
+
+            }
+
+            await new Promise(
+                r => setTimeout(r, 200)
+            );
+
+        }
+
+        // sukses
+        bot.sendMessage(
+            chatId,
+            `✅ Success\n⌑ Target: ${q}\n⌑ Amount: ${jumlah}`
+        );
+
+    } catch (err) {
+
+        console.log(err);
+
+        bot.sendMessage(
+            msg.chat.id,
+            `❌ ERROR:\n${err.message}`
+        );
 
     }
-
-  } catch (err) {
-
-    console.log(err);
-
-    bot.sendMessage(
-      msg.chat.id,
-      "❌ ☇ Terjadi kesalahan internal."
-    );
-
-  }
 
 });
 
