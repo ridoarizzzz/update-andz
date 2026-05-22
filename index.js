@@ -4,7 +4,7 @@ const {
     useMultiFileAuthState,
     downloadContentFromMessage,
     emitGroupParticipantsUpdate,
-    emitGroupUpdate,
+    groupParticipantsUpdate
     generateWAMessageContent,
     generateWAMessage,
     makeInMemoryStore,
