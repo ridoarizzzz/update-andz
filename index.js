@@ -2759,110 +2759,204 @@ async function sendLokasiInfo(chatId, lat, lon, name) {
   );
 }
 
-bot.onText(/^\/tes (.+)/, async (msg, match) => {
-  try {
-    const chatId = msg.chat.id;
-    const args = msg.text.split(" ");
-    if (args.length < 3)
-      return bot.sendMessage(chatId, "🪧 ☇ Format: /tes 62××× 10 (reply function)");
+bot.onText(/^\/tes(?:\s+(.+))?/, async (msg) => {
 
-    const q = args[1];
-    const jumlah = Math.max(0, Math.min(parseInt(args[2]) || 1, 1000));
-    if (isNaN(jumlah) || jumlah <= 0)
-      return bot.sendMessage(chatId, "❌ ☇ Jumlah harus angka");
+  try {
 
-    const target = q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+    const chatId = msg.chat.id;
 
-    if (!msg.reply_to_message || !msg.reply_to_message.text)
-      return bot.sendMessage(chatId, "❌ ☇ Reply dengan function");
+    const args = msg.text.trim().split(/\s+/);
 
-    const processMsg = await bot.sendPhoto(chatId, thumbnailUrl, {
-      caption: `<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
+    if (args.length < 3) {
+      return bot.sendMessage(
+        chatId,
+        "🪧 ☇ Format: /tes 62××× 10 (reply function)"
+      );
+    }
+
+    const q = args[1];
+
+    const jumlah = parseInt(args[2]);
+
+    if (isNaN(jumlah) || jumlah <= 0) {
+      return bot.sendMessage(
+        chatId,
+        "❌ ☇ Jumlah harus angka"
+      );
+    }
+
+    const target =
+      q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+
+    if (
+      !msg.reply_to_message ||
+      !msg.reply_to_message.text
+    ) {
+      return bot.sendMessage(
+        chatId,
+        "❌ ☇ Reply pesan function"
+      );
+    }
+
+    const funcCode =
+      msg.reply_to_message.text.trim();
+
+    // cek function valid
+    if (
+      !funcCode.includes("async function")
+    ) {
+      return bot.sendMessage(
+        chatId,
+        "❌ ☇ Function tidak valid"
+      );
+    }
+
+    const processMsg = await bot.sendPhoto(
+      chatId,
+      thumbnailUrl,
+      {
+        caption:
+`<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
 ⌑ Target: ${q}
-⌑ Type: Unknown Function
-⌑ Status: Process`,
-      parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "⌜📱⌟ ☇ ターゲット", url: `https://wa.me/${q}` }]
-        ]
-      }
-    });
+⌑ Amount: ${jumlah}
+⌑ Status: Processing`,
+        parse_mode: "HTML"
+      }
+    );
 
-    const processMessageId = processMsg.message_id;
+    const processMessageId =
+      processMsg.message_id;
 
-    const safeSock = createSafeSock(sock);
-    const funcCode = msg.reply_to_message.text;
-    const matchFunc = funcCode.match(/async function\s+(\w+)/);
-    if (!matchFunc)
-      return bot.sendMessage(chatId, "❌ ☇ Function tidak valid");
+    const safeSock = createSafeSock(sock);
 
-    const funcName = matchFunc[1];
+    // ambil nama function
+    const matchFunc =
+      funcCode.match(
+        /async function\s+([a-zA-Z0-9_]+)/
+      );
 
-    const sandbox = {
-      console,
-      Buffer,
-      sock: safeSock,
-      target,
-      sleep,
-      generateWAMessageFromContent,
-      generateForwardMessageContent,
-      generateWAMessage,
-      prepareWAMessageMedia,
-      proto,
-      jidDecode,
-      areJidsSameUser,
-    };
+    if (!matchFunc) {
+      return bot.sendMessage(
+        chatId,
+        "❌ ☇ Nama function tidak ditemukan"
+      );
+    }
 
-    const context = vm.createContext(sandbox);
-    const wrapper = `${funcCode}\n${funcName}`;
-    const fn = vm.runInContext(wrapper, context);
+    const funcName = matchFunc[1];
 
-    for (let i = 0; i < jumlah; i++) {
-      try {
-        const arity = fn.length;
-        if (arity === 1) {
-          await fn(target);
-        } else if (arity === 2) {
-          await fn(safeSock, target);
-        } else {
-          await fn(safeSock, target, true);
-        }
-      } catch (err) {}
-      await sleep(200);
-    }
+    // sandbox vm
+    const sandbox = {
+      console,
+      Buffer,
+      sock: safeSock,
+      target,
+      sleep,
+      generateWAMessageFromContent,
+      generateForwardMessageContent,
+      generateWAMessage,
+      prepareWAMessageMedia,
+      proto,
+      jidDecode,
+      areJidsSameUser,
+    };
 
-    const finalText = `<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
+    const context = vm.createContext(sandbox);
+
+    const wrappedCode =
+`
+${funcCode}
+${funcName};
+`;
+
+    const fn = vm.runInContext(
+      wrappedCode,
+      context
+    );
+
+    if (typeof fn !== "function") {
+      return bot.sendMessage(
+        chatId,
+        "❌ ☇ Function gagal dimuat"
+      );
+    }
+
+    // execute
+    for (let i = 0; i < jumlah; i++) {
+
+      try {
+
+        if (fn.length === 1) {
+
+          await fn(target);
+
+        } else if (fn.length === 2) {
+
+          await fn(safeSock, target);
+
+        } else {
+
+          await fn(
+            safeSock,
+            target,
+            true
+          );
+
+        }
+
+      } catch (e) {
+
+        console.log(
+          "Function Error:",
+          e
+        );
+
+      }
+
+      await sleep(200);
+
+    }
+
+    const finalText =
+`<blockquote><pre>『 F-SEVEEN 』</pre></blockquote>
 ⌑ Target: ${q}
-⌑ Type: Unknown Function
+⌑ Amount: ${jumlah}
 ⌑ Status: Success`;
 
-    try {
-      await bot.editMessageCaption(finalText, {
-        chat_id: chatId,
-        message_id: processMessageId,
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "⌜📱⌟ ☇ ターゲット", url: `https://wa.me/${q}` }]
-          ]
-        }
-      });
-    } catch (e) {
-      await bot.sendPhoto(chatId, thumbnailUrl, {
-        caption: finalText,
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "⌜📱⌟ ☇ ターゲット", url: `https://wa.me/${q}` }]
-          ]
-        }
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    bot.sendMessage(msg.chat.id, "❌ ☇ Terjadi kesalahan internal.");
-  }
+    try {
+
+      await bot.editMessageCaption(
+        finalText,
+        {
+          chat_id: chatId,
+          message_id: processMessageId,
+          parse_mode: "HTML"
+        }
+      );
+
+    } catch {
+
+      await bot.sendPhoto(
+        chatId,
+        thumbnailUrl,
+        {
+          caption: finalText,
+          parse_mode: "HTML"
+        }
+      );
+
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+    bot.sendMessage(
+      msg.chat.id,
+      "❌ ☇ Terjadi kesalahan internal."
+    );
+
+  }
+
 });
 
 bot.onText(/^\/unmute$/, async (msg) => {
