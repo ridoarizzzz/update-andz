@@ -5,7 +5,7 @@ const {
     downloadContentFromMessage,
     emitGroupParticipantsUpdate,
     groupParticipantsUpdate
-    generateWAMessageContent,
+    emitGroupUpdate,
     generateWAMessage,
     makeInMemoryStore,
     prepareWAMessageMedia,
